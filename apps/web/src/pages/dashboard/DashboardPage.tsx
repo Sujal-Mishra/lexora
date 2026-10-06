@@ -1,14 +1,29 @@
-﻿import React from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MOCK_DOCUMENTS } from '../../data/mockData';
+import { documentsApi } from '../../services/documentsApi';
+import { LegalDocument } from '../../types';
 import { DocumentLedger } from '../../components/organisms/DocumentLedger';
 import { SummaryCard } from '../../components/organisms/SummaryCard';
 import ladyJusticeImg from '../../assets/lady_justice.png';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const [documents, setDocuments] = useState<LegalDocument[]>(MOCK_DOCUMENTS);
 
-  const recentDocs = MOCK_DOCUMENTS.slice(0, 4);
+  useEffect(() => {
+    let isMounted = true;
+    documentsApi.getDocuments().then((docs) => {
+      if (isMounted && docs && docs.length > 0) {
+        setDocuments(docs);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const recentDocs = documents.slice(0, 4);
 
   return (
     <div className="flex flex-col w-full pb-16">
@@ -51,6 +66,14 @@ export const DashboardPage: React.FC = () => {
                 <span>View Documents</span>
                 <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
               </Link>
+
+              <Link
+                to="/portal"
+                className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-secondary-fixed text-on-secondary-fixed font-label-md text-xs uppercase tracking-wider hover:bg-secondary hover:text-white transition-colors cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px]">hub</span>
+                <span>Chambers Portal</span>
+              </Link>
             </div>
 
             <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-outline pt-2 border-t border-outline-variant/30 w-full">
@@ -66,7 +89,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right Hero Image (Lady Justice Stitch Visual) */}
+          {/* Right Hero Image */}
           <div className="lg:col-span-6 relative flex items-center justify-center">
             <div className="relative w-full overflow-hidden rounded-2xl border border-outline-variant/40 shadow-md group">
               <img
@@ -106,7 +129,7 @@ export const DashboardPage: React.FC = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md">
           <Link
             to="/upload"
             className="bg-surface-container-low p-space-lg rounded-xl border border-outline-variant/30 hover:border-secondary/50 hover:bg-surface-container transition-all group flex flex-col justify-between"
@@ -175,6 +198,29 @@ export const DashboardPage: React.FC = () => {
               Synthesized Ratios
             </span>
           </Link>
+
+          <Link
+            to="/portal"
+            className="bg-surface-container-low p-space-lg rounded-xl border border-outline-variant/30 hover:border-secondary/50 hover:bg-surface-container transition-all group flex flex-col justify-between"
+          >
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="font-serif text-2xl font-normal text-secondary">04</span>
+                <span className="material-symbols-outlined text-[18px] text-outline group-hover:text-secondary group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform">
+                  north_east
+                </span>
+              </div>
+              <h3 className="font-serif text-lg font-semibold text-on-surface mb-1">
+                Chambers Portal
+              </h3>
+              <p className="text-xs text-on-surface-variant font-sans leading-relaxed">
+                Manage counsel rolls, tenancy permissions, and docket milestones.
+              </p>
+            </div>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-secondary font-bold mt-4">
+              Administration
+            </span>
+          </Link>
         </div>
       </section>
 
@@ -203,93 +249,40 @@ export const DashboardPage: React.FC = () => {
         />
       </section>
 
-      {/* 4. RECENT SUMMARIES SECTION */}
-      <section className="w-full max-w-7xl mx-auto px-margin pt-space-lg pb-space-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-          <div>
-            <div className="flex items-center gap-3">
-              <span className="text-xs font-mono uppercase tracking-editorial text-outline font-semibold">
-                Recent Summaries
-              </span>
-              <div className="h-px w-12 bg-outline-variant/50" />
-            </div>
-            <p className="text-xs text-on-surface-variant mt-0.5">
-              Latest AI-synthesized ratio decidendi and bench insights
-            </p>
+      {/* 4. SUMMARY BRIEF CARDS */}
+      <section className="w-full max-w-7xl mx-auto px-margin pt-space-md pb-space-xl">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-mono uppercase tracking-editorial text-outline font-semibold">
+              Intelligence Brief Preview
+            </span>
+            <div className="h-px w-12 bg-outline-variant/50" />
           </div>
-          <span className="text-[10px] font-mono uppercase tracking-wider text-secondary font-bold flex items-center gap-1 self-start sm:self-auto">
-            <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
-            Synthesized via Constitutional Vector Model
-          </span>
+          <span className="text-xs font-mono text-outline">NEURAL SYNTHESIS</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-space-md">
           <SummaryCard
             category="ARBITRATION LAW"
             date="18 Sep 2026"
             title="SLP (Civil) Union of India vs. K.S. Minerals Ltd."
-            description="Section 34 & 37 Arbitration Act jurisdictional overreach assessment. Isolated contradiction between High Court findings and 3-Judge Bench precedents."
+            description="Section 34(2A) patent illegality threshold invoked against arbitrator rewriting price revision formula Clause 14.2 without bilateral authorization."
             badgeLabel="RATIO DECIDENDI"
             linkTo="/summary/doc-2"
           />
 
           <SummaryCard
-            category="LIMITATION & AWARD"
+            category="INFRASTRUCTURE DISPUTES"
             date="17 Sep 2026"
             title="NHAI vs. M/s Soma Consortium"
-            description="Section 34(3) statutory limitation bar flagged. Synthesized distinction parameters between patent illegality and commercial interpretation."
-            badgeLabel="BENCH PRECEDENTS"
+            description="Section 34(3) limitation period held absolute with no discretion beyond 30-day grace proviso. Price escalation formula held binding on EPC highway concessionaires."
+            badgeLabel="LIMITATION BAR"
             linkTo="/summary/doc-3"
           />
-
-          <SummaryCard
-            category="CRIMINAL CODE CONCORDANCE"
-            date="15 Sep 2026"
-            title="State of Maharashtra vs. R. K. Singhal"
-            description="Concordance cross-mapping of erstwhile IPC 420 against BNS 318(4) evidentiary thresholds with Supreme Court precedent matrix."
-            badgeLabel="STATUTORY CONCORDANCE"
-            linkTo="/summary/doc-4"
-          />
-        </div>
-      </section>
-
-      {/* 5. INFORMATION DOCTRINE SECTION */}
-      <section className="w-full max-w-7xl mx-auto px-margin pb-space-lg">
-        <div className="relative overflow-hidden rounded-2xl bg-surface-container-low border border-outline-variant/40 p-8 md:p-12 shadow-sm">
-          <div className="absolute -right-8 -bottom-10 select-none pointer-events-none opacity-5 font-serif text-[180px] font-bold leading-none text-on-surface">
-            LEX
-          </div>
-
-          <div className="relative z-10 max-w-2xl">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-8 h-px bg-secondary" />
-              <span className="text-[10px] font-mono tracking-editorial uppercase text-secondary font-bold">
-                Archival Rigor & Reasoning
-              </span>
-            </div>
-
-            <h2 className="font-serif text-2xl md:text-3xl lg:text-4xl text-on-surface font-semibold tracking-tight uppercase mb-3">
-              Understand More. Search Faster.
-            </h2>
-
-            <p className="text-sm md:text-base text-on-surface-variant font-sans leading-relaxed mb-6">
-              Lexora structures unstructured judicial transcripts, paper books, and statutes into a verified, citation-backed intelligence network built strictly for high-stakes counsel and litigation chambers.
-            </p>
-
-            <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[11px] font-mono text-outline font-semibold uppercase tracking-wider">
-              <span>Bench Analysis</span>
-              <span className="text-outline-variant">•</span>
-              <span>Ratio Decidendi</span>
-              <span className="text-outline-variant">•</span>
-              <span>BNS Concordance</span>
-              <span className="text-outline-variant">•</span>
-              <span>Cross-Citation Graph</span>
-            </div>
-          </div>
         </div>
       </section>
     </div>
   );
 };
 
-export const Home = DashboardPage;
+export const Dashboard = DashboardPage;

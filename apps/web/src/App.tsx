@@ -7,6 +7,7 @@ import { UploadPage } from './pages/upload';
 import { SummaryPage } from './pages/summary';
 import { SearchPage } from './pages/search';
 import { SettingsPage } from './pages/settings';
+import { PortalPage } from './pages/portal';
 import { LoginPage, RegisterPage, ForgotPasswordPage } from './pages/auth';
 
 export const App: React.FC = () => {
@@ -66,6 +67,14 @@ export const App: React.FC = () => {
           element={
             <ChambersLayout>
               <SettingsPage />
+            </ChambersLayout>
+          }
+        />
+        <Route
+          path="/portal"
+          element={
+            <ChambersLayout>
+              <PortalPage />
             </ChambersLayout>
           }
         />

@@ -13,6 +13,7 @@ export const Navbar: React.FC = () => {
     { label: 'Documents', path: '/documents' },
     { label: 'Summaries', path: '/summary/doc-2' },
     { label: 'Search', path: '/search' },
+    { label: 'Chambers Portal', path: '/portal' },
     { label: 'Settings', path: '/settings' },
   ];
 
@@ -182,13 +183,13 @@ export const Navbar: React.FC = () => {
           </Link>
 
           <Link
-            to="/summary/doc-2"
+            to="/portal"
             className={`flex flex-col items-center gap-1 ${
-              isActive('/summary') ? 'text-secondary font-semibold' : 'text-on-surface-variant'
+              isActive('/portal') ? 'text-secondary font-semibold' : 'text-on-surface-variant'
             }`}
           >
-            <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
-            <span className="text-[10px] font-label-sm uppercase tracking-wider">Insights</span>
+            <span className="material-symbols-outlined text-[20px]">hub</span>
+            <span className="text-[10px] font-label-sm uppercase tracking-wider">Portal</span>
           </Link>
 
           <Link

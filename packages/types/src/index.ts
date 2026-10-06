@@ -4,6 +4,7 @@ export interface LegalDocument {
   title: string;
   courtName: string;
   benchDesignation?: string;
+  caseNumber?: string;
   type: 'Judgment' | 'Special Leave Petition' | 'Commercial Award' | 'Criminal Appeal' | 'Writ Petition';
   date: string;
   pages: number;
@@ -12,6 +13,11 @@ export interface LegalDocument {
   verified?: boolean;
   concordance?: string;
   snippet?: string;
+  ocrText?: string;
+  detectedActs?: string[];
+  ocrConfidence?: number;
+  storagePath?: string;
+  tenantId?: string;
 }
 
 export interface LegalProvision {
@@ -62,10 +68,31 @@ export interface LegalSummary {
   aiDisclosure: string;
 }
 
+export interface ChambersTenant {
+  id: string;
+  name: string;
+  slug?: string;
+  plan?: 'boutique' | 'chamber' | 'enterprise';
+  status?: 'active' | 'suspended' | 'trial';
+  slug: string;
+  plan: 'boutique' | 'chamber' | 'enterprise';
+  status: 'active' | 'suspended' | 'trial';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ChambersUser {
+  id: string;
+  tenantId: string;
+  email: string;
+  name?: string;
+  ?: string;
+  role: 'super_admin' | 'partner' | 'associate' | 'paralegal' | 'viewer' | 'super_admin' | 'partner' | 'associate' | 'paralegal' | 'viewer'?: string;
+  barCouncilId?: string;
+  avatarUrl?: string;
+  createdAt?: string;
+}
+
 export type UploadState = 'IDLE' | 'SELECTED' | 'PROCESSING' | 'SUCCESS' | 'ERROR';
 
-export interface UploadProgress {
-  step: 'UPLOADING' | 'EXTRACTING_TEXT' | 'UNDERSTANDING_STRUCTURE' | 'PREPARING_SUMMARY';
-  progressPercent: number;
-  message: string;
-}
+export type ScreenTab = 'Home' | 'Documents' | 'Search' | 'Profile';

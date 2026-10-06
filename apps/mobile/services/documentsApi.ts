@@ -73,4 +73,46 @@ export const documentsApi = {
       setTimeout(() => resolve(newDoc), 800);
     });
   },
+
+  subscribeToProgress(
+    documentId: string,
+    onProgress: (progress: {
+      step: 'UPLOADING' | 'EXTRACTING_TEXT' | 'UNDERSTANDING_STRUCTURE' | 'PREPARING_SUMMARY' | 'COMPLETED' | 'FAILED';
+      progressPercent: number;
+      message: string;
+      error?: string;
+    }) => void
+  ): () => void {
+    let isClosed = false;
+
+    const interval = setInterval(async () => {
+      if (isClosed) {
+        clearInterval(interval);
+        return;
+      }
+      if (API_BASE_URL) {
+        try {
+          const res = await fetch(`${API_BASE_URL}/documents/${documentId}/status`);
+          if (res.ok) {
+            const json = await res.json();
+            if (json.progress) {
+              onProgress(json.progress);
+              if (json.progress.step === 'COMPLETED' || json.progress.step === 'FAILED') {
+                clearInterval(interval);
+              }
+            }
+          }
+        } catch (_) {}
+      }
+    }, 800);
+
+    return () => {
+      isClosed = true;
+      clearInterval(interval);
+    };
+  },
+
+  getFileUrl(documentId: string): string {
+    return API_BASE_URL ? `${API_BASE_URL}/documents/${documentId}/file` : '';
+  },
 };

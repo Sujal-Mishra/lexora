@@ -1,19 +1,35 @@
-﻿import React, { useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { MOCK_DOCUMENTS } from '../../data/mockData';
+﻿import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { documentsApi } from '../../services/documentsApi';
+import { LegalDocument } from '../../types';
 import { DocumentLedger } from '../../components/organisms/DocumentLedger';
 import { SearchBar } from '../../components/molecules/SearchBar';
 import { Button } from '../../components/atoms/Button';
 
 export const DocumentsPage: React.FC = () => {
   const navigate = useNavigate();
+  const [documents, setDocuments] = useState<LegalDocument[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeStatusFilter, setActiveStatusFilter] = useState<'All' | 'Processed' | 'In Queue'>('All');
   const [jurisdictionFilter, setJurisdictionFilter] = useState('All');
   const [matterFilter, setMatterFilter] = useState('All');
 
+  useEffect(() => {
+    let isMounted = true;
+    documentsApi.getDocuments().then((docs) => {
+      if (isMounted) {
+        setDocuments(docs);
+        setLoading(false);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const filteredDocs = useMemo(() => {
-    return MOCK_DOCUMENTS.filter((doc) => {
+    return documents.filter((doc) => {
       const matchesSearch =
         searchQuery.trim() === '' ||
         doc.filename.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -22,7 +38,9 @@ export const DocumentsPage: React.FC = () => {
         (doc.snippet && doc.snippet.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesStatus =
-        activeStatusFilter === 'All' || doc.status === activeStatusFilter;
+        activeStatusFilter === 'All' ||
+        (activeStatusFilter === 'Processed' && doc.status === 'Processed') ||
+        (activeStatusFilter === 'In Queue' && (doc.status === 'In Queue' || doc.status === 'Processing'));
 
       const matchesJurisdiction =
         jurisdictionFilter === 'All' || doc.courtName.includes(jurisdictionFilter);
@@ -32,7 +50,10 @@ export const DocumentsPage: React.FC = () => {
 
       return matchesSearch && matchesStatus && matchesJurisdiction && matchesMatter;
     });
-  }, [searchQuery, activeStatusFilter, jurisdictionFilter, matterFilter]);
+  }, [documents, searchQuery, activeStatusFilter, jurisdictionFilter, matterFilter]);
+
+  const processedCount = documents.filter((d) => d.status === 'Processed').length;
+  const inQueueCount = documents.filter((d) => d.status === 'In Queue' || d.status === 'Processing').length;
 
   return (
     <div className="flex flex-col w-full pb-20">
@@ -42,11 +63,11 @@ export const DocumentsPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-secondary" />
             <span className="font-mono text-xs uppercase tracking-widest text-on-surface-variant font-semibold">
-              CHAMBERS REGISTRY â€¢ MICHAELMAS '26
+              CHAMBERS REGISTRY • MICHAELMAS '26
             </span>
           </div>
           <span className="font-mono text-xs text-outline font-semibold">
-            FOLIO No. 104 â€¢ 256-BIT PRIVILEGED
+            FOLIO No. 104 • 256-BIT PRIVILEGED
           </span>
         </div>
 
@@ -85,7 +106,7 @@ export const DocumentsPage: React.FC = () => {
                 BENCH ARCHIVE TELEMETRY
               </span>
               <span className="font-title-md text-title-md text-on-surface truncate">
-                48 Folios Bound â€¢ 4 Ingestion Pipelines Active
+                {documents.length} Folios Bound • 4 Ingestion Pipelines Active
               </span>
             </div>
           </div>
@@ -104,7 +125,7 @@ export const DocumentsPage: React.FC = () => {
             value={searchQuery}
             onChange={setSearchQuery}
             onClear={() => setSearchQuery('')}
-            placeholder="Search briefs, citations (Art. 136, Â§ 482), parties..."
+            placeholder="Search briefs, citations (Art. 136, § 482), parties..."
           />
 
           {/* Status Filter Chips */}
@@ -117,31 +138,31 @@ export const DocumentsPage: React.FC = () => {
                   : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
               }`}
             >
-              All ({MOCK_DOCUMENTS.length})
+              All ({documents.length})
             </button>
 
             <button
               onClick={() => setActiveStatusFilter('Processed')}
-              className={`px-3 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer ${
                 activeStatusFilter === 'Processed'
                   ? 'bg-secondary text-on-secondary font-semibold'
                   : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Processed (4)
+              Processed ({processedCount})
             </button>
 
             <button
               onClick={() => setActiveStatusFilter('In Queue')}
-              className={`px-3 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer ${
                 activeStatusFilter === 'In Queue'
                   ? 'bg-secondary text-on-secondary font-semibold'
                   : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
               }`}
             >
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              Processing (1)
+              Processing ({inQueueCount})
             </button>
 
             {/* Jurisdiction Dropdown Filter */}
@@ -175,7 +196,14 @@ export const DocumentsPage: React.FC = () => {
 
         {/* Document Ledger Table */}
         <div className="mt-2">
-          {filteredDocs.length > 0 ? (
+          {loading ? (
+            <div className="text-center py-16 bg-surface-container-low rounded-xl border border-outline-variant/30 flex flex-col items-center justify-center">
+              <div className="w-8 h-8 border-2 border-secondary border-t-transparent rounded-full animate-spin mb-3" />
+              <p className="font-mono text-xs text-outline uppercase tracking-wider">
+                Loading Chambers Docket Index...
+              </p>
+            </div>
+          ) : filteredDocs.length > 0 ? (
             <DocumentLedger
               documents={filteredDocs}
               onSelectDocument={(id) => navigate(`/documents/${id}`)}
@@ -197,4 +225,3 @@ export const DocumentsPage: React.FC = () => {
 };
 
 export const Documents = DocumentsPage;
-

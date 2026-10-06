@@ -18,3 +18,6 @@ export * from './search';
 
 // Settings domain
 export * from './settings';
+
+// Chambers Organization Portal domain
+export * from './portal';

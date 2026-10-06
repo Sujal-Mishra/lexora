@@ -1,4 +1,4 @@
-import { LegalDocument, LegalSummary } from '../types';
+import { LegalDocument, LegalSummary } from '../types.js';
 
 export const MOCK_DOCUMENTS: LegalDocument[] = [
   {

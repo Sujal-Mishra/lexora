@@ -15,6 +15,8 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
   const [state, setState] = useState<UploadState>('IDLE');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [currentStep, setCurrentStep] = useState<number>(0);
+  const [progressPercent, setProgressPercent] = useState<number>(0);
+  const [liveMessage, setLiveMessage] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [createdDoc, setCreatedDoc] = useState<LegalDocument | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -49,25 +51,40 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
     if (!selectedFile) return;
     setState('PROCESSING');
     setCurrentStep(0);
+    setProgressPercent(15);
+    setLiveMessage('Transmitting docket to encrypted chambers sandbox...');
 
     try {
-      // Step 1: Uploading
-      await new Promise((r) => setTimeout(r, 600));
-      setCurrentStep(1);
-
-      // Step 2: Extracting Text
-      await new Promise((r) => setTimeout(r, 800));
-      setCurrentStep(2);
-
-      // Step 3: Understanding Structure
-      await new Promise((r) => setTimeout(r, 800));
-      setCurrentStep(3);
-
-      // Step 4: Preparing summary & calling document API
+      // 1. Send file to backend upload endpoint
       const resultDoc = await documentsApi.uploadDocument(selectedFile);
       setCreatedDoc(resultDoc);
-      setState('SUCCESS');
-      if (onSuccess) onSuccess(resultDoc);
+      setProgressPercent(30);
+
+      // 2. Subscribe to real-time OCR and processing pipeline stream
+      const unsubscribe = documentsApi.subscribeToProgress(resultDoc.id, (prog) => {
+        setProgressPercent(prog.progressPercent);
+        if (prog.message) setLiveMessage(prog.message);
+
+        if (prog.step === 'UPLOADING') {
+          setCurrentStep(0);
+        } else if (prog.step === 'EXTRACTING_TEXT') {
+          setCurrentStep(1);
+        } else if (prog.step === 'UNDERSTANDING_STRUCTURE') {
+          setCurrentStep(2);
+        } else if (prog.step === 'PREPARING_SUMMARY') {
+          setCurrentStep(3);
+        } else if (prog.step === 'COMPLETED') {
+          setCurrentStep(4);
+          setProgressPercent(100);
+          setState('SUCCESS');
+          if (onSuccess) onSuccess(resultDoc);
+          unsubscribe();
+        } else if (prog.step === 'FAILED') {
+          setErrorMessage(prog.error || 'OCR ingestion interrupted by processing error.');
+          setState('ERROR');
+          unsubscribe();
+        }
+      });
     } catch (err: any) {
       setErrorMessage(err?.message || 'Ingestion interrupted by registry connection error.');
       setState('ERROR');
@@ -78,12 +95,14 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
     setState('IDLE');
     setSelectedFile(null);
     setCurrentStep(0);
+    setProgressPercent(0);
+    setLiveMessage('');
     setErrorMessage('');
     setCreatedDoc(null);
   };
 
   return (
-    <div className="w-full bg-surface-container-lowest rounded-xl border border-outline-variant/40 shadow-sm p-6 md:p-10 transition-all">
+    <div className="w-full bg-surface-container-lowest rounded-xl border border-outline-variant/40 shadow-sm p-6 md:p-10 transition-all font-sans">
       <input
         type="file"
         ref={fileInputRef}
@@ -178,17 +197,33 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
         </div>
       )}
 
-      {/* 3. PROCESSING STATE */}
+      {/* 3. PROCESSING STATE (Real OCR Progress Tracker) */}
       {state === 'PROCESSING' && (
         <div className="flex flex-col items-center text-center p-8 bg-surface-container-low rounded-xl border border-outline-variant/40">
-          <div className="w-12 h-12 border-3 border-secondary border-t-transparent rounded-full animate-spin mb-4" />
+          <div className="relative mb-4 flex items-center justify-center">
+            <div className="w-16 h-16 border-4 border-secondary/20 border-t-secondary rounded-full animate-spin" />
+            <span className="absolute font-mono text-xs font-bold text-secondary">
+              {progressPercent}%
+            </span>
+          </div>
 
           <span className="text-[10px] font-mono tracking-wider uppercase text-secondary font-bold">
-            Processing Docket
+            Processing Docket Ingestion
           </span>
-          <h3 className="font-serif text-xl font-semibold text-on-surface mt-1 mb-6">
-            {steps[currentStep]}
+          <h3 className="font-serif text-xl font-semibold text-on-surface mt-1 mb-2">
+            {steps[Math.min(steps.length - 1, currentStep)]}
           </h3>
+          <p className="text-xs text-on-surface-variant font-mono mb-6 max-w-lg animate-pulse">
+            {liveMessage || 'Processing folios through bilingual extraction pipeline...'}
+          </p>
+
+          {/* Real-time Percentage Bar */}
+          <div className="w-full max-w-md bg-surface-container rounded-full h-2 mb-6 overflow-hidden border border-outline-variant/30">
+            <div
+              className="bg-secondary h-full transition-all duration-300 ease-out"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
 
           {/* Stepper Progress */}
           <div className="w-full max-w-md flex flex-col gap-3">
@@ -199,7 +234,7 @@ export const UploadDropzone: React.FC<UploadDropzoneProps> = ({
                   idx < currentStep
                     ? 'bg-surface-container-highest text-secondary font-medium'
                     : idx === currentStep
-                    ? 'bg-surface border border-secondary text-on-surface font-semibold'
+                    ? 'bg-surface border border-secondary text-on-surface font-semibold shadow-sm'
                     : 'text-outline opacity-60'
                 }`}
               >

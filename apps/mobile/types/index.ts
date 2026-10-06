@@ -4,6 +4,7 @@ export interface LegalDocument {
   title: string;
   courtName: string;
   benchDesignation?: string;
+  caseNumber?: string;
   type: 'Judgment' | 'Special Leave Petition' | 'Commercial Award' | 'Criminal Appeal' | 'Writ Petition';
   date: string;
   pages: number;
@@ -12,6 +13,11 @@ export interface LegalDocument {
   verified?: boolean;
   concordance?: string;
   snippet?: string;
+  ocrText?: string;
+  detectedActs?: string[];
+  ocrConfidence?: number;
+  storagePath?: string;
+  tenantId?: string;
 }
 
 export interface LegalProvision {
